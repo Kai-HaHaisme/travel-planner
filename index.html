@@ -1,1012 +1,1012 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智慧旅遊規劃專家</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Alpine.js CDN -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- FontAwesome CDN -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        [x-cloak] { display: none !important; }
-        @media print {
-            .no-print { display: none !important; }
-            body { background: white !important; color: black !important; }
-            .print-shadow { box-shadow: none !important; border: 1px solid #ddd !important; }
-        }
-    </style>
-</head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col" x-data="travelApp()" x-init="init()">
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Alpine.js CDN -->
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- FontAwesome CDN -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Google Fonts Inter -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+    body { font-family: 'Inter', sans-serif; }
+    [x-cloak] { display: none !important; }
+    @media print {
+        .no-print { display: none !important; }
+        body { background: white !important; color: black !important; }
+        .print-shadow { box-shadow: none !important; border: 1px solid #ddd !important; }
+    }
+</style>
 
-    <!-- Header / Navbar -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 no-print shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="bg-indigo-600 text-white p-2 rounded-xl shadow-md">
-                    <i class="fa-solid fa-plane-departure text-xl"></i>
+
+<!-- Header / Navbar -->
+<header class="bg-white border-b border-slate-200 sticky top-0 z-40 no-print shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="bg-indigo-600 text-white p-2 rounded-xl shadow-md">
+                <i class="fa-solid fa-plane-departure text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold text-slate-900 tracking-tight">智慧旅遊規劃專家</h1>
+                <p class="text-xs text-slate-500" x-text="currentTrip ? currentTrip.name : '請選擇或建立行程'"></p>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center space-x-2 sm:space-x-3">
+            <button @click="openNewTripModal()" class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition">
+                <i class="fa-solid fa-plus mr-1.5"></i> 新增行程
+            </button>
+            <button @click="printPage()" class="inline-flex items-center px-3 py-2 border border-slate-300 text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 transition">
+                <i class="fa-solid fa-print mr-1.5"></i> 列印/PDF
+            </button>
+            <div class="relative" x-data="{ open: false }">
+                <button @click="open = !open" class="inline-flex items-center px-3 py-2 border border-slate-300 text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 transition">
+                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                </button>
+                <div x-show="open" @click.away="open = false" x-cloak class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-1 border border-slate-100 z-50">
+                    <label class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 cursor-pointer">
+                        <i class="fa-solid fa-file-arrow-up mr-2 text-indigo-600"></i> 載入備份 (JSON)
+                        <input type="file" @change="importData($event)" accept=".json" class="hidden">
+                    </label>
+                    <button @click="exportData(); open = false;" class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
+                        <i class="fa-solid fa-file-arrow-down mr-2 text-emerald-600"></i> 匯出備份 (JSON)
+                    </button>
                 </div>
-                <div>
-                    <h1 class="text-lg font-bold text-slate-900 tracking-tight">智慧旅遊規劃專家</h1>
-                    <p class="text-xs text-slate-500" x-text="currentTrip ? currentTrip.name : '請選擇或建立行程'"></p>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Trip Selector Bar -->
+<div class="bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-8 py-2 no-print overflow-x-auto">
+    <div class="max-w-7xl mx-auto flex items-center space-x-2">
+        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-2">行程清單:</span>
+        <template x-for="trip in trips" :key="trip.id">
+            <button @click="switchTrip(trip.id)" 
+                :class="currentTripId === trip.id ? 'bg-indigo-50 text-indigo-700 border-indigo-300 font-semibold shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'"
+                class="px-3 py-1.5 text-sm rounded-lg border transition whitespace-nowrap flex items-center space-x-2">
+                <span x-text="trip.name"></span>
+                <span @click.stop="deleteTrip(trip.id)" class="text-slate-400 hover:text-red-500 ml-1 text-xs"><i class="fa-solid fa-xmark"></i></span>
+            </button>
+        </template>
+    </div>
+</div>
+
+<!-- Main Content Container -->
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full" x-show="currentTrip">
+    
+    <!-- Navigation Tabs -->
+    <div class="flex border-b border-slate-200 mb-6 no-print overflow-x-auto">
+        <button @click="activeTab = 'overview'" :class="activeTab === 'overview' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="py-3 px-4 border-b-2 font-medium text-sm transition whitespace-nowrap flex items-center space-x-2">
+            <i class="fa-solid fa-circle-info"></i><span>行程總覽</span>
+        </button>
+        <button @click="activeTab = 'timeline'" :class="activeTab === 'timeline' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="py-3 px-4 border-b-2 font-medium text-sm transition whitespace-nowrap flex items-center space-x-2">
+            <i class="fa-solid fa-timeline"></i><span>行程時間軸</span>
+        </button>
+        <button @click="activeTab = 'expenses'; $nextTick(() => updateChart())" :class="activeTab === 'expenses' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="py-3 px-4 border-b-2 font-medium text-sm transition whitespace-nowrap flex items-center space-x-2">
+            <i class="fa-solid fa-wallet"></i><span>費用與預算</span>
+        </button>
+        <button @click="activeTab = 'checklist'" :class="activeTab === 'checklist' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="py-3 px-4 border-b-2 font-medium text-sm transition whitespace-nowrap flex items-center space-x-2">
+            <i class="fa-solid fa-list-check"></i><span>行李清單</span>
+        </button>
+    </div>
+
+    <!-- TAB 1: OVERVIEW & ITINERARY SETTINGS -->
+    <div x-show="activeTab === 'overview'" x-transition class="space-y-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print-shadow">
+            <!-- Cover Image Section (16:9) -->
+            <div class="relative w-full aspect-video bg-slate-100 overflow-hidden group">
+                <template x-if="currentTrip.coverImage">
+                    <img :src="currentTrip.coverImage" alt="Cover" class="w-full h-full object-cover">
+                </template>
+                <template x-if="!currentTrip.coverImage">
+                    <div class="w-full h-full flex flex-col items-center justify-center text-slate-400">
+                        <i class="fa-solid fa-image text-4xl mb-2"></i>
+                        <p class="text-sm">尚未設定封面圖片 (建議 16:9)</p>
+                    </div>
+                </template>
+                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center no-print">
+                    <label class="bg-white/90 hover:bg-white text-slate-800 px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer shadow-lg transition flex items-center space-x-2">
+                        <i class="fa-solid fa-camera"></i>
+                        <span>更換封面圖片</span>
+                        <input type="file" @change="uploadCoverImage($event)" accept="image/*" class="hidden">
+                    </label>
                 </div>
             </div>
 
-            <!-- Action Buttons -->
-            <div class="flex items-center space-x-2 sm:space-x-3">
-                <button @click="openNewTripModal()" class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition">
-                    <i class="fa-solid fa-plus mr-1.5"></i> 新增行程
-                </button>
-                <button @click="printPage()" class="inline-flex items-center px-3 py-2 border border-slate-300 text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 transition">
-                    <i class="fa-solid fa-print mr-1.5"></i> 列印/PDF
-                </button>
-                <div class="relative" x-data="{ open: false }">
-                    <button @click="open = !open" class="inline-flex items-center px-3 py-2 border border-slate-300 text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 transition">
-                        <i class="fa-solid fa-ellipsis-vertical"></i>
-                    </button>
-                    <div x-show="open" @click.away="open = false" x-cloak class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-1 border border-slate-100 z-50">
-                        <label class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 cursor-pointer">
-                            <i class="fa-solid fa-file-arrow-up mr-2 text-indigo-600"></i> 載入備份 (JSON)
-                            <input type="file" @change="importData($event)" accept=".json" class="hidden">
-                        </label>
-                        <button @click="exportData(); open = false;" class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
-                            <i class="fa-solid fa-file-arrow-down mr-2 text-emerald-600"></i> 匯出備份 (JSON)
-                        </button>
+            <div class="p-6 sm:p-8 space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-6">
+                    <div>
+                        <h2 class="text-2xl sm:text-3xl font-bold text-slate-900" x-text="currentTrip.name"></h2>
+                        <p class="text-slate-500 mt-1" x-text="currentTrip.description || '尚無簡介'"></p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl text-sm font-semibold">
+                            <i class="fa-regular fa-calendar mr-2"></i>
+                            <span x-text="currentTrip.startDate"></span> ~ <span x-text="currentTrip.endDate"></span>
+                        </div>
+                        <div class="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl text-sm font-semibold">
+                            <i class="fa-solid fa-sun mr-2"></i>
+                            共 <span x-text="calculateDays()"></span> 天
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Trip Form -->
+                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 no-print">
+                    <h3 class="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+                        <i class="fa-solid fa-pen-to-square text-indigo-600 mr-2"></i> 編輯行程基本資料
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">行程名稱 (1-1)</label>
+                            <input type="text" x-model="currentTrip.name" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">天數 (1-3) <span class="text-xs text-slate-400">(由日期自動計算)</span></label>
+                            <input type="text" :value="calculateDays() + ' 天'" disabled class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm bg-slate-100 text-slate-500 cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">起始日期 (1-2)</label>
+                            <input type="date" x-model="currentTrip.startDate" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">結束日期 (1-2)</label>
+                            <input type="date" x-model="currentTrip.endDate" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">行程簡介 (1-4)</label>
+                            <textarea x-model="currentTrip.description" rows="3" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"></textarea>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </header>
+    </div>
 
-    <!-- Trip Selector Bar -->
-    <div class="bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-8 py-2 no-print overflow-x-auto">
-        <div class="max-w-7xl mx-auto flex items-center space-x-2">
-            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-2">行程清單:</span>
-            <template x-for="trip in trips" :key="trip.id">
-                <button @click="switchTrip(trip.id)" 
-                    :class="currentTripId === trip.id ? 'bg-indigo-50 text-indigo-700 border-indigo-300 font-semibold shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'"
-                    class="px-3 py-1.5 text-sm rounded-lg border transition whitespace-nowrap flex items-center space-x-2">
-                    <span x-text="trip.name"></span>
-                    <span @click.stop="deleteTrip(trip.id)" class="text-slate-400 hover:text-red-500 ml-1 text-xs"><i class="fa-solid fa-xmark"></i></span>
+    <!-- TAB 2: ITINERARY TIMELINE -->
+    <div x-show="activeTab === 'timeline'" x-transition class="space-y-6">
+        <!-- Day selector / Filter -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+            <div class="flex items-center space-x-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
+                <button @click="selectedDayFilter = 'all'" :class="selectedDayFilter === 'all' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition whitespace-nowrap">
+                    全部天數
                 </button>
+                <template x-for="dayNum in calculateDays()" :key="dayNum">
+                    <button @click="selectedDayFilter = dayNum" :class="selectedDayFilter === dayNum ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition whitespace-nowrap">
+                        第 <span x-text="dayNum"></span> 天 (<span x-text="getDayDate(dayNum)"></span>)
+                    </button>
+                </template>
+            </div>
+            <button @click="openTimelineModal()" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow-sm transition">
+                <i class="fa-solid fa-plus mr-2"></i> 新增行程項目
+            </button>
+        </div>
+
+        <!-- Timeline Items List -->
+        <div class="space-y-4">
+            <template x-for="(item, index) in sortedTimelineItems()" :key="item.id">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 transition hover:shadow-md relative overflow-hidden" :class="item.isBackup ? 'border-dashed border-amber-400 bg-amber-50/20' : ''">
+                    <!-- Backup Badge -->
+                    <div class="absolute top-0 right-0 flex items-center space-x-2">
+                        <template x-if="item.isBackup">
+                            <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-bl-xl font-semibold">
+                                <i class="fa-solid fa-triangle-exclamation mr-1"></i> 備案項目
+                            </span>
+                        </template>
+                        <span :class="categoryBadgeClass(item.category)" class="text-xs px-3 py-1 rounded-full font-medium" x-text="item.category"></span>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                        <div class="space-y-2 flex-1">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-sm font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">
+                                    <i class="fa-regular fa-clock mr-1"></i> <span x-text="item.time"></span>
+                                    <span class="text-xs text-slate-400 ml-1" x-text="'(' + item.timezone + ')'"></span>
+                                </span>
+                                <span class="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded">第 <span x-text="item.dayNumber"></span> 天</span>
+                            </div>
+
+                            <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                                <i class="fa-solid fa-location-dot text-rose-500 mr-2"></i>
+                                <span x-text="item.title"></span>
+                            </h3>
+
+                            <div class="text-sm text-slate-600 space-y-1">
+                                <p x-show="item.address"><i class="fa-solid fa-map-pin mr-1.5 text-slate-400"></i><span x-text="item.address"></span></p>
+                                <p x-show="item.notes"><i class="fa-solid fa-note-sticky mr-1.5 text-slate-400"></i><span x-text="item.notes"></span></p>
+                            </div>
+
+                            <!-- Cost & Payer info -->
+                            <div class="flex items-center space-x-4 pt-2 text-xs font-medium">
+                                <span class="text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg" x-show="item.cost > 0">
+                                    <i class="fa-solid fa-coins mr-1"></i> <span x-text="item.currency"></span> <span x-text="item.cost"></span>
+                                </span>
+                                <span class="text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg" x-show="item.payer">
+                                    <i class="fa-solid fa-user-tag mr-1"></i> 付款人: <span x-text="item.payer"></span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Photos -->
+                        <template x-if="item.photos && item.photos.length > 0">
+                            <div class="flex items-center space-x-2 overflow-x-auto py-2">
+                                <template x-for="photo in item.photos">
+                                    <div @click="openLightbox(photo)" class="w-20 h-20 rounded-xl overflow-hidden border border-slate-200 cursor-pointer hover:opacity-90 flex-shrink-0 shadow-sm">
+                                        <img :src="photo" class="w-full h-full object-cover">
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center justify-end space-x-2 mt-4 pt-3 border-t border-slate-100 no-print">
+                        <button @click="editTimelineItem(item)" class="text-slate-600 hover:text-indigo-600 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-indigo-50 transition">
+                            <i class="fa-solid fa-pen mr-1"></i> 編輯
+                        </button>
+                        <button @click="deleteTimelineItem(item.id)" class="text-slate-600 hover:text-red-600 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-red-50 transition">
+                            <i class="fa-solid fa-trash mr-1"></i> 刪除
+                        </button>
+                    </div>
+                </div>
+            </template>
+
+            <template x-if="sortedTimelineItems().length === 0">
+                <div class="text-center py-12 bg-white rounded-2xl border border-slate-200">
+                    <i class="fa-solid fa-calendar-xmark text-4xl text-slate-300 mb-3"></i>
+                    <p class="text-slate-500 font-medium">目前尚無行程時間軸項目</p>
+                    <button @click="openTimelineModal()" class="mt-3 text-xs bg-indigo-600 text-white px-4 py-2 rounded-xl font-semibold hover:bg-indigo-700 transition">立即新增行程</button>
+                </div>
             </template>
         </div>
     </div>
 
-    <!-- Main Content Container -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full" x-show="currentTrip">
-        
-        <!-- Navigation Tabs -->
-        <div class="flex border-b border-slate-200 mb-6 no-print overflow-x-auto">
-            <button @click="activeTab = 'overview'" :class="activeTab === 'overview' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="py-3 px-4 border-b-2 font-medium text-sm transition whitespace-nowrap flex items-center space-x-2">
-                <i class="fa-solid fa-circle-info"></i><span>行程總覽</span>
-            </button>
-            <button @click="activeTab = 'timeline'" :class="activeTab === 'timeline' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="py-3 px-4 border-b-2 font-medium text-sm transition whitespace-nowrap flex items-center space-x-2">
-                <i class="fa-solid fa-timeline"></i><span>行程時間軸</span>
-            </button>
-            <button @click="activeTab = 'expenses'; $nextTick(() => updateChart())" :class="activeTab === 'expenses' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="py-3 px-4 border-b-2 font-medium text-sm transition whitespace-nowrap flex items-center space-x-2">
-                <i class="fa-solid fa-wallet"></i><span>費用與預算</span>
-            </button>
-            <button @click="activeTab = 'checklist'" :class="activeTab === 'checklist' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="py-3 px-4 border-b-2 font-medium text-sm transition whitespace-nowrap flex items-center space-x-2">
-                <i class="fa-solid fa-list-check"></i><span>行李清單</span>
-            </button>
-        </div>
-
-        <!-- TAB 1: OVERVIEW & ITINERARY SETTINGS -->
-        <div x-show="activeTab === 'overview'" x-transition class="space-y-6">
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print-shadow">
-                <!-- Cover Image Section (16:9) -->
-                <div class="relative w-full aspect-video bg-slate-100 overflow-hidden group">
-                    <template x-if="currentTrip.coverImage">
-                        <img :src="currentTrip.coverImage" alt="Cover" class="w-full h-full object-cover">
-                    </template>
-                    <template x-if="!currentTrip.coverImage">
-                        <div class="w-full h-full flex flex-col items-center justify-center text-slate-400">
-                            <i class="fa-solid fa-image text-4xl mb-2"></i>
-                            <p class="text-sm">尚未設定封面圖片 (建議 16:9)</p>
-                        </div>
-                    </template>
-                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center no-print">
-                        <label class="bg-white/90 hover:bg-white text-slate-800 px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer shadow-lg transition flex items-center space-x-2">
-                            <i class="fa-solid fa-camera"></i>
-                            <span>更換封面圖片</span>
-                            <input type="file" @change="uploadCoverImage($event)" accept="image/*" class="hidden">
-                        </label>
-                    </div>
-                </div>
-
-                <div class="p-6 sm:p-8 space-y-6">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-6">
-                        <div>
-                            <h2 class="text-2xl sm:text-3xl font-bold text-slate-900" x-text="currentTrip.name"></h2>
-                            <p class="text-slate-500 mt-1" x-text="currentTrip.description || '尚無簡介'"></p>
-                        </div>
-                        <div class="flex items-center space-x-3">
-                            <div class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl text-sm font-semibold">
-                                <i class="fa-regular fa-calendar mr-2"></i>
-                                <span x-text="currentTrip.startDate"></span> ~ <span x-text="currentTrip.endDate"></span>
-                            </div>
-                            <div class="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl text-sm font-semibold">
-                                <i class="fa-solid fa-sun mr-2"></i>
-                                共 <span x-text="calculateDays()"></span> 天
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Edit Trip Form -->
-                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 no-print">
-                        <h3 class="text-lg font-semibold text-slate-900 mb-4 flex items-center">
-                            <i class="fa-solid fa-pen-to-square text-indigo-600 mr-2"></i> 編輯行程基本資料
-                        </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">行程名稱 (1-1)</label>
-                                <input type="text" x-model="currentTrip.name" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">天數 (1-3) <span class="text-xs text-slate-400">(由日期自動計算)</span></label>
-                                <input type="text" :value="calculateDays() + ' 天'" disabled class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm bg-slate-100 text-slate-500 cursor-not-allowed">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">起始日期 (1-2)</label>
-                                <input type="date" x-model="currentTrip.startDate" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">結束日期 (1-2)</label>
-                                <input type="date" x-model="currentTrip.endDate" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-slate-700 mb-1">行程簡介 (1-4)</label>
-                                <textarea x-model="currentTrip.description" rows="3" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"></textarea>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    <!-- TAB 3: EXPENSES & BUDGET -->
+    <div x-show="activeTab === 'expenses'" x-transition class="space-y-6">
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">總預算金額</p>
+                <p class="text-2xl font-bold text-slate-900 mt-2" x-text="getTotalExpense() + ' NTD'"></p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">支出項目數</p>
+                <p class="text-2xl font-bold text-indigo-600 mt-2" x-text="getExpenseCount() + ' 筆'"></p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">主要付款人</p>
+                <p class="text-2xl font-bold text-emerald-600 mt-2" x-text="getMainPayer()"></p>
             </div>
         </div>
 
-        <!-- TAB 2: ITINERARY TIMELINE -->
-        <div x-show="activeTab === 'timeline'" x-transition class="space-y-6">
-            <!-- Day selector / Filter -->
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                <div class="flex items-center space-x-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
-                    <button @click="selectedDayFilter = 'all'" :class="selectedDayFilter === 'all' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition whitespace-nowrap">
-                        全部天數
-                    </button>
-                    <template x-for="dayNum in calculateDays()" :key="dayNum">
-                        <button @click="selectedDayFilter = dayNum" :class="selectedDayFilter === dayNum ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition whitespace-nowrap">
-                            第 <span x-text="dayNum"></span> 天 (<span x-text="getDayDate(dayNum)"></span>)
-                        </button>
-                    </template>
+        <!-- Chart and Breakdown -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Pie Chart -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center justify-center">
+                <h3 class="text-base font-bold text-slate-900 mb-4 w-full text-left flex items-center">
+                    <i class="fa-solid fa-chart-pie text-indigo-600 mr-2"></i> 費用類別圓餅圖 (3-2)
+                </h3>
+                <div class="w-full max-w-xs relative aspect-square">
+                    <canvas id="expenseChart"></canvas>
                 </div>
-                <button @click="openTimelineModal()" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow-sm transition">
-                    <i class="fa-solid fa-plus mr-2"></i> 新增行程項目
+            </div>
+
+            <!-- Expense Details Table -->
+            <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <h3 class="text-base font-bold text-slate-900 flex items-center">
+                        <i class="fa-solid fa-table-list text-indigo-600 mr-2"></i> 費用明細表 (3-3)
+                    </h3>
+                    <div class="flex items-center space-x-2 w-full sm:w-auto">
+                        <!-- Category Filter -->
+                        <select x-model="expenseCategoryFilter" class="bg-slate-50 border border-slate-200 text-xs rounded-xl px-3 py-2 font-medium focus:outline-none">
+                            <option value="all">所有類別</option>
+                            <option value="景點">景點</option>
+                            <option value="美食">美食</option>
+                            <option value="交通">交通</option>
+                            <option value="住宿">住宿</option>
+                            <option value="購物">購物</option>
+                            <option value="其他">其他</option>
+                        </select>
+                        <!-- Sort Order -->
+                        <select x-model="expenseSortOrder" class="bg-slate-50 border border-slate-200 text-xs rounded-xl px-3 py-2 font-medium focus:outline-none">
+                            <option value="time">依時間排序 (預設)</option>
+                            <option value="amount-desc">金額高到低</option>
+                            <option value="amount-asc">金額低到高</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-200 text-xs text-slate-400 uppercase">
+                                <th class="py-3 px-3">日期時間</th>
+                                <th class="py-3 px-3">項目/地點</th>
+                                <th class="py-3 px-3">類別</th>
+                                <th class="py-3 px-3">付款人</th>
+                                <th class="py-3 px-3 text-right">金額</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <template x-for="item in filteredExpenses()" :key="item.id">
+                                <tr class="hover:bg-slate-50">
+                                    <td class="py-3 px-3 text-xs text-slate-500">
+                                        第 <span x-text="item.dayNumber"></span> 天 <span x-text="item.time"></span>
+                                    </td>
+                                    <td class="py-3 px-3 font-medium text-slate-900">
+                                        <div x-text="item.title"></div>
+                                        <div class="text-xs text-slate-400" x-text="item.notes"></div>
+                                    </td>
+                                    <td class="py-3 px-3">
+                                        <span :class="categoryBadgeClass(item.category)" class="text-xs px-2.5 py-1 rounded-full font-medium" x-text="item.category"></span>
+                                    </td>
+                                    <td class="py-3 px-3 text-xs text-slate-600" x-text="item.payer || '未指定'"></td>
+                                    <td class="py-3 px-3 text-right font-bold text-emerald-600">
+                                        <span x-text="item.currency + ' ' + item.cost"></span>
+                                    </td>
+                                </tr>
+                            </template>
+                            <template x-if="filteredExpenses().length === 0">
+                                <tr>
+                                    <td colspan="5" class="text-center py-8 text-slate-400 text-xs">尚無費用紀錄</td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 4: CHECKLIST -->
+    <div x-show="activeTab === 'checklist'" x-transition class="space-y-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
+            <!-- Add Checklist Item Form -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-center gap-3">
+                <select x-model="newCheckCategory" class="bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none w-full sm:w-48">
+                    <template x-for="cat in currentTrip.checklistCategories" :key="cat">
+                        <option :value="cat" x-text="cat"></option>
+                    </template>
+                </select>
+                <input type="text" x-model="newCheckItemText" placeholder="輸入行李或準備項目名稱..." class="flex-1 w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <button @click="addChecklistItem()" class="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow-sm transition whitespace-nowrap">
+                    <i class="fa-solid fa-plus mr-1"></i> 新增項目
                 </button>
             </div>
 
-            <!-- Timeline Items List -->
-            <div class="space-y-4">
-                <template x-for="(item, index) in sortedTimelineItems()" :key="item.id">
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 transition hover:shadow-md relative overflow-hidden" :class="item.isBackup ? 'border-dashed border-amber-400 bg-amber-50/20' : ''">
-                        <!-- Backup Badge -->
-                        <div class="absolute top-0 right-0 flex items-center space-x-2">
-                            <template x-if="item.isBackup">
-                                <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-bl-xl font-semibold">
-                                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> 備案項目
-                                </span>
-                            </template>
-                            <span :class="categoryBadgeClass(item.category)" class="text-xs px-3 py-1 rounded-full font-medium" x-text="item.category"></span>
+            <!-- Checklist Categories & Items -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <template x-for="category in currentTrip.checklistCategories" :key="category">
+                    <div class="bg-slate-50/60 rounded-2xl p-5 border border-slate-200 space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                            <h4 class="font-bold text-slate-900 flex items-center">
+                                <i class="fa-solid fa-suitcase-rolling text-indigo-600 mr-2"></i>
+                                <span x-text="category"></span>
+                                <span class="ml-2 text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full" x-text="getCategoryCount(category)"></span>
+                            </h4>
+                            <button @click="deleteChecklistCategory(category)" class="text-slate-400 hover:text-red-500 text-xs"><i class="fa-solid fa-xmark"></i></button>
                         </div>
 
-                        <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                            <div class="space-y-2 flex-1">
-                                <div class="flex items-center space-x-3">
-                                    <span class="text-sm font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">
-                                        <i class="fa-regular fa-clock mr-1"></i> <span x-text="item.time"></span>
-                                        <span class="text-xs text-slate-400 ml-1" x-text="'(' + item.timezone + ')'"></span>
-                                    </span>
-                                    <span class="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded">第 <span x-text="item.dayNumber"></span> 天</span>
-                                </div>
-
-                                <h3 class="text-lg font-bold text-slate-900 flex items-center">
-                                    <i class="fa-solid fa-location-dot text-rose-500 mr-2"></i>
-                                    <span x-text="item.title"></span>
-                                </h3>
-
-                                <div class="text-sm text-slate-600 space-y-1">
-                                    <p x-show="item.address"><i class="fa-solid fa-map-pin mr-1.5 text-slate-400"></i><span x-text="item.address"></span></p>
-                                    <p x-show="item.notes"><i class="fa-solid fa-note-sticky mr-1.5 text-slate-400"></i><span x-text="item.notes"></span></p>
-                                </div>
-
-                                <!-- Cost & Payer info -->
-                                <div class="flex items-center space-x-4 pt-2 text-xs font-medium">
-                                    <span class="text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg" x-show="item.cost > 0">
-                                        <i class="fa-solid fa-coins mr-1"></i> <span x-text="item.currency"></span> <span x-text="item.cost"></span>
-                                    </span>
-                                    <span class="text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg" x-show="item.payer">
-                                        <i class="fa-solid fa-user-tag mr-1"></i> 付款人: <span x-text="item.payer"></span>
-                                    </span>
-                                </div>
-                            </div>
-
-                            <!-- Photos -->
-                            <template x-if="item.photos && item.photos.length > 0">
-                                <div class="flex items-center space-x-2 overflow-x-auto py-2">
-                                    <template x-for="photo in item.photos">
-                                        <div @click="openLightbox(photo)" class="w-20 h-20 rounded-xl overflow-hidden border border-slate-200 cursor-pointer hover:opacity-90 flex-shrink-0 shadow-sm">
-                                            <img :src="photo" class="w-full h-full object-cover">
-                                        </div>
-                                    </template>
+                        <div class="space-y-2">
+                            <template x-for="item in currentTrip.checklist.filter(i => i.category === category)" :key="item.id">
+                                <div class="flex items-center justify-between bg-white px-3 py-2.5 rounded-xl border border-slate-200 shadow-xs group">
+                                    <label class="flex items-center space-x-3 cursor-pointer flex-1">
+                                        <input type="checkbox" x-model="item.checked" @change="saveData()" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                                        <span class="text-sm font-medium" :class="item.checked ? 'line-through text-slate-400' : 'text-slate-700'" x-text="item.text"></span>
+                                    </label>
+                                    <button @click="deleteChecklistItem(item.id)" class="text-slate-300 group-hover:text-red-500 transition text-xs"><i class="fa-solid fa-trash"></i></button>
                                 </div>
                             </template>
-                        </div>
-
-                        <!-- Actions -->
-                        <div class="flex items-center justify-end space-x-2 mt-4 pt-3 border-t border-slate-100 no-print">
-                            <button @click="editTimelineItem(item)" class="text-slate-600 hover:text-indigo-600 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-indigo-50 transition">
-                                <i class="fa-solid fa-pen mr-1"></i> 編輯
-                            </button>
-                            <button @click="deleteTimelineItem(item.id)" class="text-slate-600 hover:text-red-600 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-red-50 transition">
-                                <i class="fa-solid fa-trash mr-1"></i> 刪除
-                            </button>
+                            <template x-if="currentTrip.checklist.filter(i => i.category === category).length === 0">
+                                <p class="text-xs text-slate-400 text-center py-4">此類別尚無項目</p>
+                            </template>
                         </div>
                     </div>
                 </template>
+            </div>
 
-                <template x-if="sortedTimelineItems().length === 0">
-                    <div class="text-center py-12 bg-white rounded-2xl border border-slate-200">
-                        <i class="fa-solid fa-calendar-xmark text-4xl text-slate-300 mb-3"></i>
-                        <p class="text-slate-500 font-medium">目前尚無行程時間軸項目</p>
-                        <button @click="openTimelineModal()" class="mt-3 text-xs bg-indigo-600 text-white px-4 py-2 rounded-xl font-semibold hover:bg-indigo-700 transition">立即新增行程</button>
-                    </div>
-                </template>
+            <!-- Add Category Form -->
+            <div class="pt-4 border-t border-slate-200 flex items-center space-x-3">
+                <input type="text" x-model="newCategoryName" placeholder="新增自訂清單類別名稱..." class="bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none w-64">
+                <button @click="addChecklistCategory()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold rounded-xl shadow-sm transition">
+                    新增類別
+                </button>
             </div>
         </div>
+    </div>
 
-        <!-- TAB 3: EXPENSES & BUDGET -->
-        <div x-show="activeTab === 'expenses'" x-transition class="space-y-6">
-            <!-- Summary Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">總預算金額</p>
-                    <p class="text-2xl font-bold text-slate-900 mt-2" x-text="getTotalExpense() + ' NTD'"></p>
+</main>
+
+<!-- MODAL: New / Edit Trip -->
+<div x-show="showNewTripModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div @click.away="showNewTripModal = false" class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl">
+        <h3 class="text-lg font-bold text-slate-900">建立新行程</h3>
+        <div class="space-y-3">
+            <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1">行程名稱</label>
+                <input type="text" x-model="tripForm.name" placeholder="例如：東京賞枫五日遊" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-medium text-slate-700 mb-1">起始日</label>
+                    <input type="date" x-model="tripForm.startDate" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none">
                 </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">支出項目數</p>
-                    <p class="text-2xl font-bold text-indigo-600 mt-2" x-text="getExpenseCount() + ' 筆'"></p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">主要付款人</p>
-                    <p class="text-2xl font-bold text-emerald-600 mt-2" x-text="getMainPayer()"></p>
+                <div>
+                    <label class="block text-xs font-medium text-slate-700 mb-1">結束日</label>
+                    <input type="date" x-model="tripForm.endDate" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none">
                 </div>
             </div>
-
-            <!-- Chart and Breakdown -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Pie Chart -->
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center justify-center">
-                    <h3 class="text-base font-bold text-slate-900 mb-4 w-full text-left flex items-center">
-                        <i class="fa-solid fa-chart-pie text-indigo-600 mr-2"></i> 費用類別圓餅圖 (3-2)
-                    </h3>
-                    <div class="w-full max-w-xs relative aspect-square">
-                        <canvas id="expenseChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Expense Details Table -->
-                <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
-                    <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
-                        <h3 class="text-base font-bold text-slate-900 flex items-center">
-                            <i class="fa-solid fa-table-list text-indigo-600 mr-2"></i> 費用明細表 (3-3)
-                        </h3>
-                        <div class="flex items-center space-x-2 w-full sm:w-auto">
-                            <!-- Category Filter -->
-                            <select x-model="expenseCategoryFilter" class="bg-slate-50 border border-slate-200 text-xs rounded-xl px-3 py-2 font-medium focus:outline-none">
-                                <option value="all">所有類別</option>
-                                <option value="景點">景點</option>
-                                <option value="美食">美食</option>
-                                <option value="交通">交通</option>
-                                <option value="住宿">住宿</option>
-                                <option value="購物">購物</option>
-                                <option value="其他">其他</option>
-                            </select>
-                            <!-- Sort Order -->
-                            <select x-model="expenseSortOrder" class="bg-slate-50 border border-slate-200 text-xs rounded-xl px-3 py-2 font-medium focus:outline-none">
-                                <option value="time">依時間排序 (預設)</option>
-                                <option value="amount-desc">金額高到低</option>
-                                <option value="amount-asc">金額低到高</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm">
-                            <thead>
-                                <tr class="border-b border-slate-200 text-xs text-slate-400 uppercase">
-                                    <th class="py-3 px-3">日期時間</th>
-                                    <th class="py-3 px-3">項目/地點</th>
-                                    <th class="py-3 px-3">類別</th>
-                                    <th class="py-3 px-3">付款人</th>
-                                    <th class="py-3 px-3 text-right">金額</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                <template x-for="item in filteredExpenses()" :key="item.id">
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="py-3 px-3 text-xs text-slate-500">
-                                            第 <span x-text="item.dayNumber"></span> 天 <span x-text="item.time"></span>
-                                        </td>
-                                        <td class="py-3 px-3 font-medium text-slate-900">
-                                            <div x-text="item.title"></div>
-                                            <div class="text-xs text-slate-400" x-text="item.notes"></div>
-                                        </td>
-                                        <td class="py-3 px-3">
-                                            <span :class="categoryBadgeClass(item.category)" class="text-xs px-2.5 py-1 rounded-full font-medium" x-text="item.category"></span>
-                                        </td>
-                                        <td class="py-3 px-3 text-xs text-slate-600" x-text="item.payer || '未指定'"></td>
-                                        <td class="py-3 px-3 text-right font-bold text-emerald-600">
-                                            <span x-text="item.currency + ' ' + item.cost"></span>
-                                        </td>
-                                    </tr>
-                                </template>
-                                <template x-if="filteredExpenses().length === 0">
-                                    <tr>
-                                        <td colspan="5" class="text-center py-8 text-slate-400 text-xs">尚無費用紀錄</td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1">簡介</label>
+                <textarea x-model="tripForm.description" rows="2" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none"></textarea>
             </div>
         </div>
+        <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
+            <button @click="showNewTripModal = false" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl">取消</button>
+            <button @click="saveNewTrip()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow-sm">確認建立</button>
+        </div>
+    </div>
+</div>
 
-        <!-- TAB 4: CHECKLIST -->
-        <div x-show="activeTab === 'checklist'" x-transition class="space-y-6">
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
-                <!-- Add Checklist Item Form -->
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-center gap-3">
-                    <select x-model="newCheckCategory" class="bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none w-full sm:w-48">
-                        <template x-for="cat in currentTrip.checklistCategories" :key="cat">
-                            <option :value="cat" x-text="cat"></option>
-                        </template>
-                    </select>
-                    <input type="text" x-model="newCheckItemText" placeholder="輸入行李或準備項目名稱..." class="flex-1 w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <button @click="addChecklistItem()" class="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow-sm transition whitespace-nowrap">
-                        <i class="fa-solid fa-plus mr-1"></i> 新增項目
-                    </button>
+<!-- MODAL: Timeline Item Editor -->
+<div x-show="showTimelineModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
+    <div @click.away="showTimelineModal = false" class="bg-white rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-xl my-8">
+        <h3 class="text-lg font-bold text-slate-900" x-text="timelineForm.id ? '編輯行程項目' : '新增行程項目'"></h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1">天數選擇</label>
+                <select x-model.number="timelineForm.dayNumber" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white">
+                    <template x-for="day in calculateDays()" :key="day">
+                        <option :value="day" x-text="'第 ' + day + ' 天 (' + getDayDate(day) + ')'"></option>
+                    </template>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1">時間 (2-1)</label>
+                <input type="time" x-model="timelineForm.time" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1">時區 (2-1)</label>
+                <select x-model="timelineForm.timezone" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white">
+                    <option value="GMT+8">GMT+8 (台灣/台北)</option>
+                    <option value="GMT+9">GMT+9 (日本/東京)</option>
+                    <option value="GMT+9">GMT+9 (韓國/首爾)</option>
+                    <option value="GMT+7">GMT+7 (泰國/曼谷)</option>
+                    <option value="GMT+0">GMT+0 (倫敦)</option>
+                    <option value="GMT-5">GMT-5 (紐約)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1">分類 (2-4)</label>
+                <select x-model="timelineForm.category" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white">
+                    <option value="景點">景點</option>
+                    <option value="美食">美食</option>
+                    <option value="交通">交通</option>
+                    <option value="住宿">住宿</option>
+                    <option value="購物">購物</option>
+                    <option value="其他">其他</option>
+                </select>
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-xs font-medium text-slate-700 mb-1">地點/景點名稱 (2-3)</label>
+                <input type="text" x-model="timelineForm.title" placeholder="例如：東京晴空塔" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1">預算/花費金額 (2-5)</label>
+                <input type="number" x-model.number="timelineForm.cost" placeholder="0" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1">幣值</label>
+                <select x-model="timelineForm.currency" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white">
+                    <option value="TWD">TWD 台幣</option>
+                    <option value="JPY">JPY 日幣</option>
+                    <option value="USD">USD 美元</option>
+                    <option value="KRW">KRW 韓元</option>
+                    <option value="EUR">EUR 歐元</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1">付款人 (2-5)</label>
+                <input type="text" x-model="timelineForm.payer" placeholder="例如：小明" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1">是否為備案 (2-2)</label>
+                <div class="flex items-center space-x-2 pt-2">
+                    <input type="checkbox" x-model="timelineForm.isBackup" class="w-4 h-4 text-indigo-600 rounded">
+                    <span class="text-sm text-slate-700">設為備案項目 (替代方案)</span>
                 </div>
-
-                <!-- Checklist Categories & Items -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <template x-for="category in currentTrip.checklistCategories" :key="category">
-                        <div class="bg-slate-50/60 rounded-2xl p-5 border border-slate-200 space-y-4">
-                            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-                                <h4 class="font-bold text-slate-900 flex items-center">
-                                    <i class="fa-solid fa-suitcase-rolling text-indigo-600 mr-2"></i>
-                                    <span x-text="category"></span>
-                                    <span class="ml-2 text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full" x-text="getCategoryCount(category)"></span>
-                                </h4>
-                                <button @click="deleteChecklistCategory(category)" class="text-slate-400 hover:text-red-500 text-xs"><i class="fa-solid fa-xmark"></i></button>
-                            </div>
-
-                            <div class="space-y-2">
-                                <template x-for="item in currentTrip.checklist.filter(i => i.category === category)" :key="item.id">
-                                    <div class="flex items-center justify-between bg-white px-3 py-2.5 rounded-xl border border-slate-200 shadow-xs group">
-                                        <label class="flex items-center space-x-3 cursor-pointer flex-1">
-                                            <input type="checkbox" x-model="item.checked" @change="saveData()" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
-                                            <span class="text-sm font-medium" :class="item.checked ? 'line-through text-slate-400' : 'text-slate-700'" x-text="item.text"></span>
-                                        </label>
-                                        <button @click="deleteChecklistItem(item.id)" class="text-slate-300 group-hover:text-red-500 transition text-xs"><i class="fa-solid fa-trash"></i></button>
-                                    </div>
-                                </template>
-                                <template x-if="currentTrip.checklist.filter(i => i.category === category).length === 0">
-                                    <p class="text-xs text-slate-400 text-center py-4">此類別尚無項目</p>
-                                </template>
-                            </div>
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-xs font-medium text-slate-700 mb-1">地址或備註地點 (2-6)</label>
+                <input type="text" x-model="timelineForm.address" placeholder="例如：東京都墨田區押上1-1-2" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-xs font-medium text-slate-700 mb-1">備註/交通說明/票券資訊 (2-7)</label>
+                <textarea x-model="timelineForm.notes" rows="2" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"></textarea>
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-xs font-medium text-slate-700 mb-1">上傳照片 (2-8)</label>
+                <input type="file" @change="uploadTimelinePhoto($event)" accept="image/*" multiple class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                <div class="flex items-center space-x-2 mt-2 overflow-x-auto">
+                    <template x-for="(p, idx) in timelineForm.photos">
+                        <div class="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200">
+                            <img :src="p" class="w-full h-full object-cover">
+                            <button @click="timelineForm.photos.splice(idx, 1)" class="absolute top-0 right-0 bg-red-600 text-white w-4 h-4 text-xs flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                     </template>
                 </div>
-
-                <!-- Add Category Form -->
-                <div class="pt-4 border-t border-slate-200 flex items-center space-x-3">
-                    <input type="text" x-model="newCategoryName" placeholder="新增自訂清單類別名稱..." class="bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none w-64">
-                    <button @click="addChecklistCategory()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold rounded-xl shadow-sm transition">
-                        新增類別
-                    </button>
-                </div>
             </div>
         </div>
-
-    </main>
-
-    <!-- MODAL: New / Edit Trip -->
-    <div x-show="showNewTripModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-        <div @click.away="showNewTripModal = false" class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl">
-            <h3 class="text-lg font-bold text-slate-900">建立新行程</h3>
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-xs font-medium text-slate-700 mb-1">行程名稱</label>
-                    <input type="text" x-model="tripForm.name" placeholder="例如：東京賞枫五日遊" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none">
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-700 mb-1">起始日</label>
-                        <input type="date" x-model="tripForm.startDate" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-700 mb-1">結束日</label>
-                        <input type="date" x-model="tripForm.endDate" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-700 mb-1">簡介</label>
-                    <textarea x-model="tripForm.description" rows="2" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none"></textarea>
-                </div>
-            </div>
-            <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
-                <button @click="showNewTripModal = false" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl">取消</button>
-                <button @click="saveNewTrip()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow-sm">確認建立</button>
-            </div>
+        <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
+            <button @click="showTimelineModal = false" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl">取消</button>
+            <button @click="saveTimelineItem()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow-sm">儲存項目</button>
         </div>
     </div>
+</div>
 
-    <!-- MODAL: Timeline Item Editor -->
-    <div x-show="showTimelineModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
-        <div @click.away="showTimelineModal = false" class="bg-white rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-xl my-8">
-            <h3 class="text-lg font-bold text-slate-900" x-text="timelineForm.id ? '編輯行程項目' : '新增行程項目'"></h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-xs font-medium text-slate-700 mb-1">天數選擇</label>
-                    <select x-model.number="timelineForm.dayNumber" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white">
-                        <template x-for="day in calculateDays()" :key="day">
-                            <option :value="day" x-text="'第 ' + day + ' 天 (' + getDayDate(day) + ')'"></option>
-                        </template>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-700 mb-1">時間 (2-1)</label>
-                    <input type="time" x-model="timelineForm.time" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-700 mb-1">時區 (2-1)</label>
-                    <select x-model="timelineForm.timezone" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white">
-                        <option value="GMT+8">GMT+8 (台灣/台北)</option>
-                        <option value="GMT+9">GMT+9 (日本/東京)</option>
-                        <option value="GMT+9">GMT+9 (韓國/首爾)</option>
-                        <option value="GMT+7">GMT+7 (泰國/曼谷)</option>
-                        <option value="GMT+0">GMT+0 (倫敦)</option>
-                        <option value="GMT-5">GMT-5 (紐約)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-700 mb-1">分類 (2-4)</label>
-                    <select x-model="timelineForm.category" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white">
-                        <option value="景點">景點</option>
-                        <option value="美食">美食</option>
-                        <option value="交通">交通</option>
-                        <option value="住宿">住宿</option>
-                        <option value="購物">購物</option>
-                        <option value="其他">其他</option>
-                    </select>
-                </div>
-                <div class="sm:col-span-2">
-                    <label class="block text-xs font-medium text-slate-700 mb-1">地點/景點名稱 (2-3)</label>
-                    <input type="text" x-model="timelineForm.title" placeholder="例如：東京晴空塔" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-700 mb-1">預算/花費金額 (2-5)</label>
-                    <input type="number" x-model.number="timelineForm.cost" placeholder="0" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-700 mb-1">幣值</label>
-                    <select x-model="timelineForm.currency" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white">
-                        <option value="TWD">TWD 台幣</option>
-                        <option value="JPY">JPY 日幣</option>
-                        <option value="USD">USD 美元</option>
-                        <option value="KRW">KRW 韓元</option>
-                        <option value="EUR">EUR 歐元</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-700 mb-1">付款人 (2-5)</label>
-                    <input type="text" x-model="timelineForm.payer" placeholder="例如：小明" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-700 mb-1">是否為備案 (2-2)</label>
-                    <div class="flex items-center space-x-2 pt-2">
-                        <input type="checkbox" x-model="timelineForm.isBackup" class="w-4 h-4 text-indigo-600 rounded">
-                        <span class="text-sm text-slate-700">設為備案項目 (替代方案)</span>
-                    </div>
-                </div>
-                <div class="sm:col-span-2">
-                    <label class="block text-xs font-medium text-slate-700 mb-1">地址或備註地點 (2-6)</label>
-                    <input type="text" x-model="timelineForm.address" placeholder="例如：東京都墨田區押上1-1-2" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
-                </div>
-                <div class="sm:col-span-2">
-                    <label class="block text-xs font-medium text-slate-700 mb-1">備註/交通說明/票券資訊 (2-7)</label>
-                    <textarea x-model="timelineForm.notes" rows="2" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"></textarea>
-                </div>
-                <div class="sm:col-span-2">
-                    <label class="block text-xs font-medium text-slate-700 mb-1">上傳照片 (2-8)</label>
-                    <input type="file" @change="uploadTimelinePhoto($event)" accept="image/*" multiple class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                    <div class="flex items-center space-x-2 mt-2 overflow-x-auto">
-                        <template x-for="(p, idx) in timelineForm.photos">
-                            <div class="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200">
-                                <img :src="p" class="w-full h-full object-cover">
-                                <button @click="timelineForm.photos.splice(idx, 1)" class="absolute top-0 right-0 bg-red-600 text-white w-4 h-4 text-xs flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
-                            </div>
-                        </template>
-                    </div>
-                </div>
-            </div>
-            <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
-                <button @click="showTimelineModal = false" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl">取消</button>
-                <button @click="saveTimelineItem()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow-sm">儲存項目</button>
-            </div>
-        </div>
+<!-- MODAL: Lightbox for Photo View -->
+<div x-show="lightboxImage" x-cloak @click="lightboxImage = null" class="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
+    <div class="relative max-w-4xl max-h-full">
+        <img :src="lightboxImage" class="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl">
+        <button @click="lightboxImage = null" class="absolute top-4 right-4 text-white bg-black/50 hover:bg-black w-10 h-10 rounded-full flex items-center justify-center text-lg"><i class="fa-solid fa-xmark"></i></button>
     </div>
+</div>
 
-    <!-- MODAL: Lightbox for Photo View -->
-    <div x-show="lightboxImage" x-cloak @click="lightboxImage = null" class="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
-        <div class="relative max-w-4xl max-h-full">
-            <img :src="lightboxImage" class="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl">
-            <button @click="lightboxImage = null" class="absolute top-4 right-4 text-white bg-black/50 hover:bg-black w-10 h-10 rounded-full flex items-center justify-center text-lg"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-    </div>
+<!-- JavaScript Application Logic -->
+<script>
+    let expenseChartInstance = null;
 
-    <!-- JavaScript Application Logic -->
-    <script>
-        let expenseChartInstance = null;
+    function travelApp() {
+        return {
+            activeTab: 'overview',
+            trips: [],
+            currentTripId: null,
+            currentTrip: null,
+            selectedDayFilter: 'all',
+            expenseCategoryFilter: 'all',
+            expenseSortOrder: 'time',
+            showNewTripModal: false,
+            showTimelineModal: false,
+            lightboxImage: null,
+            newCheckCategory: '證件物品',
+            newCheckItemText: '',
+            newCategoryName: '',
 
-        function travelApp() {
-            return {
-                activeTab: 'overview',
-                trips: [],
-                currentTripId: null,
-                currentTrip: null,
-                selectedDayFilter: 'all',
-                expenseCategoryFilter: 'all',
-                expenseSortOrder: 'time',
-                showNewTripModal: false,
-                showTimelineModal: false,
-                lightboxImage: null,
-                newCheckCategory: '證件物品',
-                newCheckItemText: '',
-                newCategoryName: '',
+            tripForm: {
+                name: '',
+                startDate: new Date().toISOString().split('T')[0],
+                endDate: new Date(Date.now() + 4*86400000).toISOString().split('T')[0],
+                description: ''
+            },
 
-                tripForm: {
-                    name: '',
+            timelineForm: {
+                id: null,
+                dayNumber: 1,
+                time: '09:00',
+                timezone: 'GMT+8',
+                isBackup: false,
+                title: '',
+                category: '景點',
+                cost: 0,
+                currency: 'TWD',
+                payer: '',
+                address: '',
+                notes: '',
+                photos: []
+            },
+
+            init() {
+                const saved = localStorage.getItem('travel_planner_trips');
+                if (saved) {
+                    try {
+                        this.trips = JSON.parse(saved);
+                    } catch(e) { console.error(e); }
+                }
+                if (this.trips.length === 0) {
+                    this.createDefaultTrip();
+                } else {
+                    this.currentTripId = this.trips[0].id;
+                    this.currentTrip = this.trips[0];
+                }
+                this.$watch('currentTrip', () => { this.saveData(); }, { deep: true });
+
+                // Register Service Worker for PWA
+                if ('serviceWorker' in navigator) {
+                    window.addEventListener('load', () => {
+                        navigator.serviceWorker.register('sw.js').catch(err => {
+                            console.log('ServiceWorker registration failed: ', err);
+                        });
+                    });
+                }
+            },
+
+            createDefaultTrip() {
+                const defaultTrip = {
+                    id: Date.now(),
+                    name: '東京賞楓自由行',
+                    startDate: '2026-11-01',
+                    endDate: '2026-11-05',
+                    description: '秋季日本東京賞楓與美食購物五日之旅',
+                    coverImage: '',
+                    checklistCategories: ['證件物品', '電子設備', '穿搭衣物', '日常用品', '藥品清潔', '其他'],
+                    checklist: [
+                        { id: 1, category: '證件物品', text: '護照 (效期6個月以上)', checked: true },
+                        { id: 2, category: '證件物品', text: '日元現鈔與信用卡', checked: true },
+                        { id: 3, category: '電子設備', text: '行動電源與充電線', checked: false },
+                        { id: 4, category: '穿搭衣物', text: '防風保暖外套', checked: false }
+                    ],
+                    timeline: [
+                        {
+                            id: 1,
+                            dayNumber: 1,
+                            time: '10:00',
+                            timezone: 'GMT+9',
+                            isBackup: false,
+                            title: '抵達成田機場',
+                            category: '交通',
+                            cost: 2500,
+                            currency: 'TWD',
+                            payer: '小明',
+                            address: '成田國際機場',
+                            notes: '搭乘Skyliner前往市區',
+                            photos: []
+                        },
+                        {
+                            id: 2,
+                            dayNumber: 1,
+                            time: '13:00',
+                            timezone: 'GMT+9',
+                            isBackup: false,
+                            title: '一風堂拉麵午餐',
+                            category: '美食',
+                            cost: 1200,
+                            currency: 'JPY',
+                            payer: '小華',
+                            address: '東京都新宿區',
+                            notes: '美味豚骨拉麵',
+                            photos: []
+                        }
+                    ]
+                };
+                this.trips.push(defaultTrip);
+                this.currentTripId = defaultTrip.id;
+                this.currentTrip = defaultTrip;
+                this.saveData();
+            },
+
+            switchTrip(id) {
+                this.currentTripId = id;
+                this.currentTrip = this.trips.find(t => t.id === id);
+            },
+
+            openNewTripModal() {
+                this.tripForm = {
+                    name: '新旅遊行程',
                     startDate: new Date().toISOString().split('T')[0],
                     endDate: new Date(Date.now() + 4*86400000).toISOString().split('T')[0],
                     description: ''
-                },
+                };
+                this.showNewTripModal = true;
+            },
 
-                timelineForm: {
-                    id: null,
-                    dayNumber: 1,
-                    time: '09:00',
-                    timezone: 'GMT+8',
-                    isBackup: false,
-                    title: '',
-                    category: '景點',
-                    cost: 0,
-                    currency: 'TWD',
-                    payer: '',
-                    address: '',
-                    notes: '',
-                    photos: []
-                },
+            saveNewTrip() {
+                const newTrip = {
+                    id: Date.now(),
+                    name: this.tripForm.name,
+                    startDate: this.tripForm.startDate,
+                    endDate: this.tripForm.endDate,
+                    description: this.tripForm.description,
+                    coverImage: '',
+                    checklistCategories: ['證件物品', '電子設備', '穿搭衣物', '日常用品', '藥品清潔', '其他'],
+                    checklist: [],
+                    timeline: []
+                };
+                this.trips.push(newTrip);
+                this.switchTrip(newTrip.id);
+                this.showNewTripModal = false;
+                this.saveData();
+            },
 
-                init() {
-                    const saved = localStorage.getItem('travel_planner_trips');
-                    if (saved) {
-                        try {
-                            this.trips = JSON.parse(saved);
-                        } catch(e) { console.error(e); }
-                    }
-                    if (this.trips.length === 0) {
-                        this.createDefaultTrip();
-                    } else {
-                        this.currentTripId = this.trips[0].id;
-                        this.currentTrip = this.trips[0];
-                    }
-                    this.$watch('currentTrip', () => { this.saveData(); }, { deep: true });
-                },
-
-                createDefaultTrip() {
-                    const defaultTrip = {
-                        id: Date.now(),
-                        name: '東京賞楓自由行',
-                        startDate: '2026-11-01',
-                        endDate: '2026-11-05',
-                        description: '秋季日本東京賞楓與美食購物五日之旅',
-                        coverImage: '',
-                        checklistCategories: ['證件物品', '電子設備', '穿搭衣物', '日常用品', '藥品清潔', '其他'],
-                        checklist: [
-                            { id: 1, category: '證件物品', text: '護照 (效期6個月以上)', checked: true },
-                            { id: 2, category: '證件物品', text: '日元現鈔與信用卡', checked: true },
-                            { id: 3, category: '電子設備', text: '行動電源與充電線', checked: false },
-                            { id: 4, category: '穿搭衣物', text: '防風保暖外套', checked: false }
-                        ],
-                        timeline: [
-                            {
-                                id: 1,
-                                dayNumber: 1,
-                                time: '10:00',
-                                timezone: 'GMT+9',
-                                isBackup: false,
-                                title: '抵達成田機場',
-                                category: '交通',
-                                cost: 2500,
-                                currency: 'TWD',
-                                payer: '小明',
-                                address: '成田國際機場',
-                                notes: '搭乘Skyliner前往市區',
-                                photos: []
-                            },
-                            {
-                                id: 2,
-                                dayNumber: 1,
-                                time: '13:00',
-                                timezone: 'GMT+9',
-                                isBackup: false,
-                                title: '一風堂拉麵午餐',
-                                category: '美食',
-                                cost: 1200,
-                                currency: 'JPY',
-                                payer: '小華',
-                                address: '東京都新宿區',
-                                notes: '美味豚骨拉麵',
-                                photos: []
-                            }
-                        ]
-                    };
-                    this.trips.push(defaultTrip);
-                    this.currentTripId = defaultTrip.id;
-                    this.currentTrip = defaultTrip;
-                    this.saveData();
-                },
-
-                switchTrip(id) {
-                    this.currentTripId = id;
-                    this.currentTrip = this.trips.find(t => t.id === id);
-                },
-
-                openNewTripModal() {
-                    this.tripForm = {
-                        name: '新旅遊行程',
-                        startDate: new Date().toISOString().split('T')[0],
-                        endDate: new Date(Date.now() + 4*86400000).toISOString().split('T')[0],
-                        description: ''
-                    };
-                    this.showNewTripModal = true;
-                },
-
-                saveNewTrip() {
-                    const newTrip = {
-                        id: Date.now(),
-                        name: this.tripForm.name,
-                        startDate: this.tripForm.startDate,
-                        endDate: this.tripForm.endDate,
-                        description: this.tripForm.description,
-                        coverImage: '',
-                        checklistCategories: ['證件物品', '電子設備', '穿搭衣物', '日常用品', '藥品清潔', '其他'],
-                        checklist: [],
-                        timeline: []
-                    };
-                    this.trips.push(newTrip);
-                    this.switchTrip(newTrip.id);
-                    this.showNewTripModal = false;
-                    this.saveData();
-                },
-
-                deleteTrip(id) {
-                    if (this.trips.length <= 1) {
-                        alert('至少需保留一個行程！');
-                        return;
-                    }
-                    this.trips = this.trips.filter(t => t.id !== id);
-                    if (this.currentTripId === id) {
-                        this.currentTripId = this.trips[0].id;
-                        this.currentTrip = this.trips[0];
-                    }
-                    this.saveData();
-                },
-
-                calculateDays() {
-                    if (!this.currentTrip || !this.currentTrip.startDate || !this.currentTrip.endDate) return 1;
-                    const start = new Date(this.currentTrip.startDate);
-                    const end = new Date(this.currentTrip.endDate);
-                    const diff = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
-                    return diff > 0 ? diff : 1;
-                },
-
-                getDayDate(dayNum) {
-                    if (!this.currentTrip || !this.currentTrip.startDate) return '';
-                    const d = new Date(this.currentTrip.startDate);
-                    d.setDate(d.getDate() + (dayNum - 1));
-                    return d.toISOString().split('T')[0];
-                },
-
-                uploadCoverImage(event) {
-                    const file = event.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            this.currentTrip.coverImage = e.target.result;
-                            this.saveData();
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                },
-
-                openTimelineModal(item = null) {
-                    if (item) {
-                        this.timelineForm = JSON.parse(JSON.stringify(item));
-                    } else {
-                        this.timelineForm = {
-                            id: null,
-                            dayNumber: 1,
-                            time: '09:00',
-                            timezone: 'GMT+8',
-                            isBackup: false,
-                            title: '',
-                            category: '景點',
-                            cost: 0,
-                            currency: 'TWD',
-                            payer: '',
-                            address: '',
-                            notes: '',
-                            photos: []
-                        };
-                    }
-                    this.showTimelineModal = true;
-                },
-
-                editTimelineItem(item) {
-                    this.openTimelineModal(item);
-                },
-
-                saveTimelineItem() {
-                    if (!this.timelineForm.title) {
-                        alert('請輸入地點/景點名稱');
-                        return;
-                    }
-                    if (this.timelineForm.id) {
-                        const idx = this.currentTrip.timeline.findIndex(i => i.id === this.timelineForm.id);
-                        if (idx !== -1) {
-                            this.currentTrip.timeline[idx] = JSON.parse(JSON.stringify(this.timelineForm));
-                        }
-                    } else {
-                        this.timelineForm.id = Date.now();
-                        this.currentTrip.timeline.push(JSON.parse(JSON.stringify(this.timelineForm)));
-                    }
-                    this.showTimelineModal = false;
-                    this.saveData();
-                },
-
-                deleteTimelineItem(id) {
-                    this.currentTrip.timeline = this.currentTrip.timeline.filter(i => i.id !== id);
-                    this.saveData();
-                },
-
-                uploadTimelinePhoto(event) {
-                    const files = event.target.files;
-                    for (let file of files) {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            this.timelineForm.photos.push(e.target.result);
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                },
-
-                sortedTimelineItems() {
-                    let items = [...this.currentTrip.timeline];
-                    if (this.selectedDayFilter !== 'all') {
-                        items = items.filter(i => i.dayNumber === this.selectedDayFilter);
-                    }
-                    return items.sort((a, b) => {
-                        if (a.dayNumber !== b.dayNumber) return a.dayNumber - b.dayNumber;
-                        return a.time.localeCompare(b.time);
-                    });
-                },
-
-                categoryBadgeClass(category) {
-                    switch(category) {
-                        case '景點': return 'bg-rose-50 text-rose-700';
-                        case '美食': return 'bg-amber-50 text-amber-700';
-                        case '交通': return 'bg-blue-50 text-blue-700';
-                        case '住宿': return 'bg-purple-50 text-purple-700';
-                        case '购物': case '購物': return 'bg-emerald-50 text-emerald-700';
-                        default: return 'bg-slate-100 text-slate-700';
-                    }
-                },
-
-                openLightbox(photoUrl) {
-                    this.lightboxImage = photoUrl;
-                },
-
-                getTotalExpense() {
-                    return this.currentTrip.timeline.reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
-                },
-
-                getExpenseCount() {
-                    return this.currentTrip.timeline.filter(item => Number(item.cost) > 0).length;
-                },
-
-                getMainPayer() {
-                    const payers = {};
-                    this.currentTrip.timeline.forEach(item => {
-                        if (item.payer && Number(item.cost) > 0) {
-                            payers[item.payer] = (payers[item.payer] || 0) + Number(item.cost);
-                        }
-                    });
-                    let maxPayer = '無';
-                    let maxAmount = 0;
-                    for (let p in payers) {
-                        if (payers[p] > maxAmount) {
-                            maxAmount = payers[p];
-                            maxPayer = p;
-                        }
-                    }
-                    return maxPayer;
-                },
-
-                filteredExpenses() {
-                    let items = this.currentTrip.timeline.filter(i => Number(i.cost) > 0);
-                    if (this.expenseCategoryFilter !== 'all') {
-                        items = items.filter(i => i.category === this.expenseCategoryFilter);
-                    }
-                    return items.sort((a, b) => {
-                        if (this.expenseSortOrder === 'amount-desc') return b.cost - a.cost;
-                        if (this.expenseSortOrder === 'amount-asc') return a.cost - b.cost;
-                        // Default time sort
-                        if (a.dayNumber !== b.dayNumber) return a.dayNumber - b.dayNumber;
-                        return a.time.localeCompare(b.time);
-                    });
-                },
-
-                updateChart() {
-                    const ctx = document.getElementById('expenseChart');
-                    if (!ctx) return;
-
-                    const categories = ['景點', '美食', '交通', '住宿', '購物', '其他'];
-                    const dataMap = {};
-                    categories.forEach(c => dataMap[c] = 0);
-
-                    this.currentTrip.timeline.forEach(item => {
-                        if (item.cost > 0) {
-                            const cat = item.category || '其他';
-                            if (dataMap[cat] !== undefined) {
-                                dataMap[cat] += Number(item.cost);
-                            } else {
-                                dataMap['其他'] += Number(item.cost);
-                            }
-                        }
-                    });
-
-                    const chartData = categories.map(c => dataMap[c]);
-
-                    if (expenseChartInstance) {
-                        expenseChartInstance.destroy();
-                    }
-
-                    expenseChartInstance = new Chart(ctx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: categories,
-                            datasets: [{
-                                data: chartData,
-                                backgroundColor: ['#f43f5e', '#f59e0b', '#3b82f6', '#a855f7', '#10b981', '#64748b'],
-                                borderWidth: 2,
-                                borderColor: '#ffffff'
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
-                            }
-                        }
-                    });
-                },
-
-                addChecklistItem() {
-                    if (!this.newCheckItemText.trim()) return;
-                    this.currentTrip.checklist.push({
-                        id: Date.now(),
-                        category: this.newCheckCategory,
-                        text: this.newCheckItemText.trim(),
-                        checked: false
-                    });
-                    this.newCheckItemText = '';
-                    this.saveData();
-                },
-
-                deleteChecklistItem(id) {
-                    this.currentTrip.checklist = this.currentTrip.checklist.filter(i => i.id !== id);
-                    this.saveData();
-                },
-
-                addChecklistCategory() {
-                    if (!this.newCategoryName.trim()) return;
-                    if (this.currentTrip.checklistCategories.includes(this.newCategoryName.trim())) {
-                        alert('類別已存在！');
-                        return;
-                    }
-                    this.currentTrip.checklistCategories.push(this.newCategoryName.trim());
-                    this.newCategoryName = '';
-                    this.saveData();
-                },
-
-                deleteChecklistCategory(category) {
-                    this.currentTrip.checklistCategories = this.currentTrip.checklistCategories.filter(c => c !== category);
-                    this.currentTrip.checklist = this.currentTrip.checklist.filter(i => i.category !== category);
-                    this.saveData();
-                },
-
-                getCategoryCount(category) {
-                    const total = this.currentTrip.checklist.filter(i => i.category === category).length;
-                    const done = this.currentTrip.checklist.filter(i => i.category === category && i.checked).length;
-                    return `${done}/${total}`;
-                },
-
-                saveData() {
-                    localStorage.setItem('travel_planner_trips', JSON.stringify(this.trips));
-                    if (this.activeTab === 'expenses') {
-                        setTimeout(() => this.updateChart(), 50);
-                    }
-                },
-
-                exportData() {
-                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.trips, null, 2));
-                    const downloadAnchor = document.createElement('a');
-                    downloadAnchor.setAttribute("href", dataStr);
-                    downloadAnchor.setAttribute("download", `travel_planner_backup_${new Date().toISOString().split('T')[0]}.json`);
-                    document.body.appendChild(downloadAnchor);
-                    downloadAnchor.click();
-                    downloadAnchor.remove();
-                },
-
-                importData(event) {
-                    const file = event.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            try {
-                                const parsed = JSON.parse(e.target.result);
-                                if (Array.isArray(parsed)) {
-                                    this.trips = parsed;
-                                    if (this.trips.length > 0) {
-                                        this.currentTripId = this.trips[0].id;
-                                        this.currentTrip = this.trips[0];
-                                    }
-                                    this.saveData();
-                                    alert('備份資料載入成功！');
-                                }
-                            } catch(err) {
-                                alert('載入失敗，檔案格式錯誤！');
-                            }
-                        };
-                        reader.readAsText(file);
-                    }
-                },
-
-                printPage() {
-                    window.print();
+            deleteTrip(id) {
+                if (this.trips.length <= 1) {
+                    alert('至少需保留一個行程！');
+                    return;
                 }
+                this.trips = this.trips.filter(t => t.id !== id);
+                if (this.currentTripId === id) {
+                    this.currentTripId = this.trips[0].id;
+                    this.currentTrip = this.trips[0];
+                }
+                this.saveData();
+            },
+
+            calculateDays() {
+                if (!this.currentTrip || !this.currentTrip.startDate || !this.currentTrip.endDate) return 1;
+                const start = new Date(this.currentTrip.startDate);
+                const end = new Date(this.currentTrip.endDate);
+                const diff = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                return diff > 0 ? diff : 1;
+            },
+
+            getDayDate(dayNum) {
+                if (!this.currentTrip || !this.currentTrip.startDate) return '';
+                const d = new Date(this.currentTrip.startDate);
+                d.setDate(d.getDate() + (dayNum - 1));
+                return d.toISOString().split('T')[0];
+            },
+
+            uploadCoverImage(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        this.currentTrip.coverImage = e.target.result;
+                        this.saveData();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            },
+
+            openTimelineModal(item = null) {
+                if (item) {
+                    this.timelineForm = JSON.parse(JSON.stringify(item));
+                } else {
+                    this.timelineForm = {
+                        id: null,
+                        dayNumber: 1,
+                        time: '09:00',
+                        timezone: 'GMT+8',
+                        isBackup: false,
+                        title: '',
+                        category: '景點',
+                        cost: 0,
+                        currency: 'TWD',
+                        payer: '',
+                        address: '',
+                        notes: '',
+                        photos: []
+                    };
+                }
+                this.showTimelineModal = true;
+            },
+
+            editTimelineItem(item) {
+                this.openTimelineModal(item);
+            },
+
+            saveTimelineItem() {
+                if (!this.timelineForm.title) {
+                    alert('請輸入地點/景點名稱');
+                    return;
+                }
+                if (this.timelineForm.id) {
+                    const idx = this.currentTrip.timeline.findIndex(i => i.id === this.timelineForm.id);
+                    if (idx !== -1) {
+                        this.currentTrip.timeline[idx] = JSON.parse(JSON.stringify(this.timelineForm));
+                    }
+                } else {
+                    this.timelineForm.id = Date.now();
+                    this.currentTrip.timeline.push(JSON.parse(JSON.stringify(this.timelineForm)));
+                }
+                this.showTimelineModal = false;
+                this.saveData();
+            },
+
+            deleteTimelineItem(id) {
+                this.currentTrip.timeline = this.currentTrip.timeline.filter(i => i.id !== id);
+                this.saveData();
+            },
+
+            uploadTimelinePhoto(event) {
+                const files = event.target.files;
+                for (let file of files) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        this.timelineForm.photos.push(e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            },
+
+            sortedTimelineItems() {
+                let items = [...this.currentTrip.timeline];
+                if (this.selectedDayFilter !== 'all') {
+                    items = items.filter(i => i.dayNumber === this.selectedDayFilter);
+                }
+                return items.sort((a, b) => {
+                    if (a.dayNumber !== b.dayNumber) return a.dayNumber - b.dayNumber;
+                    return a.time.localeCompare(b.time);
+                });
+            },
+
+            categoryBadgeClass(category) {
+                switch(category) {
+                    case '景點': return 'bg-rose-50 text-rose-700';
+                    case '美食': return 'bg-amber-50 text-amber-700';
+                    case '交通': return 'bg-blue-50 text-blue-700';
+                    case '住宿': return 'bg-purple-50 text-purple-700';
+                    case '购物': case '購物': return 'bg-emerald-50 text-emerald-700';
+                    default: return 'bg-slate-100 text-slate-700';
+                }
+            },
+
+            openLightbox(photoUrl) {
+                this.lightboxImage = photoUrl;
+            },
+
+            getTotalExpense() {
+                return this.currentTrip.timeline.reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
+            },
+
+            getExpenseCount() {
+                return this.currentTrip.timeline.filter(item => Number(item.cost) > 0).length;
+            },
+
+            getMainPayer() {
+                const payers = {};
+                this.currentTrip.timeline.forEach(item => {
+                    if (item.payer && Number(item.cost) > 0) {
+                        payers[item.payer] = (payers[item.payer] || 0) + Number(item.cost);
+                    }
+                });
+                let maxPayer = '無';
+                let maxAmount = 0;
+                for (let p in payers) {
+                    if (payers[p] > maxAmount) {
+                        maxAmount = payers[p];
+                        maxPayer = p;
+                    }
+                }
+                return maxPayer;
+            },
+
+            filteredExpenses() {
+                let items = this.currentTrip.timeline.filter(i => Number(i.cost) > 0);
+                if (this.expenseCategoryFilter !== 'all') {
+                    items = items.filter(i => i.category === this.expenseCategoryFilter);
+                }
+                return items.sort((a, b) => {
+                    if (this.expenseSortOrder === 'amount-desc') return b.cost - a.cost;
+                    if (this.expenseSortOrder === 'amount-asc') return a.cost - b.cost;
+                    // Default time sort
+                    if (a.dayNumber !== b.dayNumber) return a.dayNumber - b.dayNumber;
+                    return a.time.localeCompare(b.time);
+                });
+            },
+
+            updateChart() {
+                const ctx = document.getElementById('expenseChart');
+                if (!ctx) return;
+
+                const categories = ['景點', '美食', '交通', '住宿', '購物', '其他'];
+                const dataMap = {};
+                categories.forEach(c => dataMap[c] = 0);
+
+                this.currentTrip.timeline.forEach(item => {
+                    if (item.cost > 0) {
+                        const cat = item.category || '其他';
+                        if (dataMap[cat] !== undefined) {
+                            dataMap[cat] += Number(item.cost);
+                        } else {
+                            dataMap['其他'] += Number(item.cost);
+                        }
+                    }
+                });
+
+                const chartData = categories.map(c => dataMap[c]);
+
+                if (expenseChartInstance) {
+                    expenseChartInstance.destroy();
+                }
+
+                expenseChartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: categories,
+                        datasets: [{
+                            data: chartData,
+                            backgroundColor: ['#f43f5e', '#f59e0b', '#3b82f6', '#a855f7', '#10b981', '#64748b'],
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+                        }
+                    }
+                });
+            },
+
+            addChecklistItem() {
+                if (!this.newCheckItemText.trim()) return;
+                this.currentTrip.checklist.push({
+                    id: Date.now(),
+                    category: this.newCheckCategory,
+                    text: this.newCheckItemText.trim(),
+                    checked: false
+                });
+                this.newCheckItemText = '';
+                this.saveData();
+            },
+
+            deleteChecklistItem(id) {
+                this.currentTrip.checklist = this.currentTrip.checklist.filter(i => i.id !== id);
+                this.saveData();
+            },
+
+            addChecklistCategory() {
+                if (!this.newCategoryName.trim()) return;
+                if (this.currentTrip.checklistCategories.includes(this.newCategoryName.trim())) {
+                    alert('類別已存在！');
+                    return;
+                }
+                this.currentTrip.checklistCategories.push(this.newCategoryName.trim());
+                this.newCategoryName = '';
+                this.saveData();
+            },
+
+            deleteChecklistCategory(category) {
+                this.currentTrip.checklistCategories = this.currentTrip.checklistCategories.filter(c => c !== category);
+                this.currentTrip.checklist = this.currentTrip.checklist.filter(i => i.category !== category);
+                this.saveData();
+            },
+
+            getCategoryCount(category) {
+                const total = this.currentTrip.checklist.filter(i => i.category === category).length;
+                const done = this.currentTrip.checklist.filter(i => i.category === category && i.checked).length;
+                return `${done}/${total}`;
+            },
+
+            saveData() {
+                localStorage.setItem('travel_planner_trips', JSON.stringify(this.trips));
+                if (this.activeTab === 'expenses') {
+                    setTimeout(() => this.updateChart(), 50);
+                }
+            },
+
+            exportData() {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.trips, null, 2));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", dataStr);
+                downloadAnchor.setAttribute("download", `travel_planner_backup_${new Date().toISOString().split('T')[0]}.json`);
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+            },
+
+            importData(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const parsed = JSON.parse(e.target.result);
+                            if (Array.isArray(parsed)) {
+                                this.trips = parsed;
+                                if (this.trips.length > 0) {
+                                    this.currentTripId = this.trips[0].id;
+                                    this.currentTrip = this.trips[0];
+                                }
+                                this.saveData();
+                                alert('備份資料載入成功！');
+                            }
+                        } catch(err) {
+                            alert('載入失敗，檔案格式錯誤！');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            },
+
+            printPage() {
+                window.print();
             }
         }
-    </script>
-</body>
-</html>
+    }
+</script>
